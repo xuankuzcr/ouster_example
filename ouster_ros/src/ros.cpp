@@ -13,6 +13,7 @@
 
 #include "ouster/types.h"
 
+
 namespace ouster_ros {
 
 namespace sensor = ouster::sensor;
@@ -30,12 +31,12 @@ bool read_lidar_packet(const sensor::client& cli, PacketMsg& m,
 }
 
 sensor_msgs::Imu packet_to_imu_msg(const PacketMsg& p, const std::string& frame,
-                                   const sensor::packet_format& pf) {
+                                   const sensor::packet_format& pf, double stamp_imu) {
     const double standard_g = 9.80665;
     sensor_msgs::Imu m;
     const uint8_t* buf = p.buf.data();
-
-    m.header.stamp.fromNSec(pf.imu_gyro_ts(buf));
+    m.header.stamp = ros::Time(stamp_imu);
+    //m.header.stamp.fromNSec(pf.imu_gyro_ts(buf));
     m.header.frame_id = frame;
 
     m.orientation.x = 0;
@@ -88,12 +89,14 @@ void scan_to_cloud(const ouster::XYZLut& xyz_lut,
     }
 }
 
-sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud, ns timestamp,
+sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud, double timestamp,
                                             const std::string& frame) {
     sensor_msgs::PointCloud2 msg{};
     pcl::toROSMsg(cloud, msg);
     msg.header.frame_id = frame;
-    msg.header.stamp.fromNSec(timestamp.count());
+
+    msg.header.stamp = ros::Time(timestamp);
+    //msg.header.stamp.fromNSec(timestamp.count());
     return msg;
 }
 

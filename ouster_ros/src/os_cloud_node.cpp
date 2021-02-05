@@ -24,6 +24,12 @@ using PacketMsg = ouster_ros::PacketMsg;
 using Cloud = ouster_ros::Cloud;
 using Point = ouster_ros::Point;
 namespace sensor = ouster::sensor;
+bool g_flag_lidar = 1;
+bool g_flag_imu = 1;
+uint64_t g_init_lidar = 0;
+uint64_t g_init_imu = 0;
+double timestamp_lidar;
+double timestamp_imu;
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "os_cloud_node");
@@ -65,16 +71,34 @@ int main(int argc, char** argv) {
                 ls.headers.begin(), ls.headers.end(), [](const auto& h) {
                     return h.timestamp != std::chrono::nanoseconds{0};
                 });
-            if (h != ls.headers.end()) {
+            if (h != ls.headers.end()) 
+            {
                 scan_to_cloud(xyz_lut, h->timestamp, ls, cloud);
+                // if(g_flag_lidar == 1)
+                // {
+                //     g_init_lidar = ros::Time::now().toNSec()- h->timestamp.count();
+                //     g_flag_lidar = 0;
+                // }
+                timestamp_lidar = (g_init_imu + h->timestamp.count())/1e9;
+
                 lidar_pub.publish(ouster_ros::cloud_to_cloud_msg(
-                    cloud, h->timestamp, sensor_frame));
+                    cloud, timestamp_lidar, sensor_frame));
             }
         }
     };
 
     auto imu_handler = [&](const PacketMsg& p) {
-        imu_pub.publish(ouster_ros::packet_to_imu_msg(p, imu_frame, pf));
+        
+        const uint8_t* buf_temp = p.buf.data();
+        //m.header.stamp.fromNSec(pf.imu_gyro_ts(buf_temp));
+        if(g_flag_imu == 1)
+        {
+                
+            g_init_imu = ros::Time::now().toNSec()- pf.imu_gyro_ts(buf_temp);
+            g_flag_imu = 0;
+        }
+        timestamp_imu = (g_init_imu + pf.imu_gyro_ts(buf_temp))/1e9;
+        imu_pub.publish(ouster_ros::packet_to_imu_msg(p, imu_frame, pf, timestamp_imu));
     };
 
     auto lidar_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(

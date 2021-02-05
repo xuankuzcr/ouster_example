@@ -54,7 +54,7 @@ bool read_lidar_packet(const sensor::client& cli, PacketMsg& pm,
  */
 sensor_msgs::Imu packet_to_imu_msg(const PacketMsg& pm,
                                    const std::string& frame,
-                                   const sensor::packet_format& pf);
+                                   const sensor::packet_format& pf, double stamp_imu);
 
 /**
  * Populate a PCL point cloud from a LidarScan
@@ -74,7 +74,7 @@ void scan_to_cloud(const ouster::XYZLut& xyz_lut,
  * @param frame the frame to set in the resulting ROS message
  * @return a ROS message containing the point cloud
  */
-sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud, ns timestamp,
+sensor_msgs::PointCloud2 cloud_to_cloud_msg(const Cloud& cloud, double timestamp,
                                             const std::string& frame);
 
 /**
